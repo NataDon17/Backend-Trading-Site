@@ -1,4 +1,4 @@
-package ru.skypro.homework.controller;
+package ru.skypro.homework.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -7,10 +7,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.multipart.MultipartFile;
 
 import ru.skypro.homework.config.WebSecurityConfig;
+import ru.skypro.homework.controller.AdsController;
 import ru.skypro.homework.dto.ads.AdsDto;
 import ru.skypro.homework.dto.ads.CreateAdsDto;
 import ru.skypro.homework.dto.ads.FullAdsDto;
@@ -19,14 +21,15 @@ import ru.skypro.homework.dto.comment.CommentDTO;
 import ru.skypro.homework.entity.Ad;
 import ru.skypro.homework.entity.Comment;
 
-import ru.skypro.homework.service.AdService;
-import ru.skypro.homework.service.CommentService;
-import ru.skypro.homework.service.ImageService;
+import ru.skypro.homework.entity.User;
+import ru.skypro.homework.repository.AdRepository;
+import ru.skypro.homework.service.impl.AdServiceImpl;
 
 import java.io.IOException;
 import java.util.Collections;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -40,7 +43,11 @@ public class AdsServiceTests {
     @Mock
     private AdService adService;
     @Mock
-    private CommentService commentService;
+    private AdRepository adRepositoryMock;
+    @InjectMocks
+    private AdServiceImpl out;
+    @Mock
+    private Authentication authentication;
     @Mock
     private ImageService imageService;
     private final Ad testAd = new Ad();
@@ -113,12 +120,18 @@ public class AdsServiceTests {
 
     @Test
     public void removeAdTest() {
-        when(adService.removeAdDto(testAd.getId())).thenReturn(true);
+        Integer adId = 1;
+        User user = new User();
+        user.setEmail("user@mail.ru");
+        Ad ad = new Ad();
+        ad.setId(adId);
+        ad.setAuthor(user);
 
-        boolean del = adsController.removeAd(testAd.getId());
+        when(adRepositoryMock.findById(adId)).thenReturn(Optional.of(ad));
+        when(authentication.getName()).thenReturn("user@mail.ru");
 
-        verify(adService).removeAdDto(testAd.getId());
-        assertTrue(del);
+        out.removeAdDto(authentication, adId);
+        verify(adRepositoryMock, times(1)).delete(ad);
     }
 
     @Test
@@ -127,16 +140,15 @@ public class AdsServiceTests {
         adsDto.setTitle("New Title");
         adsDto.setPrice(500);
 
-        when(adService.updateAdDto(testAd.getId(), createAdsDto)).thenReturn(adsDto);
+        when(adService.updateAdDto(authentication, testAd.getId(), createAdsDto)).thenReturn(adsDto);
 
-        AdsDto response = adsController.updateAds(testAd.getId(), createAdsDto);
+        AdsDto response = adsController.updateAds(authentication, testAd.getId(), createAdsDto);
 
-        verify(adService).updateAdDto(testAd.getId(), createAdsDto);
+        verify(adService).updateAdDto(authentication, testAd.getId(), createAdsDto);
 
         assertEquals(adsDto, response);
         assertNotNull(response);
     }
-
 
 
     @Test
