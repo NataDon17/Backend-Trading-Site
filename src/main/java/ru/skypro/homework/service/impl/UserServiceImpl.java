@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ru.skypro.homework.dto.TradingUserDetails;
 import ru.skypro.homework.dto.userdto.UserInfoDto;
 import ru.skypro.homework.entity.Image;
 import ru.skypro.homework.entity.User;
@@ -91,7 +92,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findUserByEmail(username).orElseThrow(() ->
-                new UsernameNotFoundException("User with username " + username + " doesn't exists"));
+        return userRepository
+                .findUserByEmail(username)
+                .map(TradingUserDetails::from)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 }

@@ -1,6 +1,7 @@
 package ru.skypro.homework.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,10 +14,11 @@ import ru.skypro.homework.entity.Ad;
 import ru.skypro.homework.entity.Image;
 import ru.skypro.homework.entity.User;
 import ru.skypro.homework.exeption.AdNotFoundException;
+import ru.skypro.homework.exeption.ForbiddenException;
+import ru.skypro.homework.exeption.UserNotFoundException;
 import ru.skypro.homework.repository.AdRepository;
 import ru.skypro.homework.service.AdService;
 import ru.skypro.homework.service.ImageService;
-import ru.skypro.homework.service.UserService;
 import ru.skypro.homework.service.mapper.AdMapper;
 
 import java.util.Collection;
@@ -30,7 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdServiceImpl implements AdService {
     private final AdMapper adMapper;
-    private final UserService userService;
+    private final UserServiceImpl userService;
     private final AdRepository adRepository;
     private final ImageService imageService;
 
@@ -48,8 +50,9 @@ public class AdServiceImpl implements AdService {
      */
     @Override
     public AdsDto createAds(CreateAdsDto adDto, MultipartFile image) {
+        User user = userService.findAuthUser().orElseThrow(UserNotFoundException::new);
         Ad newAd = adMapper.mapCreatedAdsDtoToAd(adDto);
-        newAd.setAuthor(userService.findAuthUser().orElseThrow());
+        newAd.setAuthor(user);
         Image newImage = imageService.createImage(image);
         newAd.setImage(newImage);
         adRepository.save(newAd);
@@ -69,28 +72,30 @@ public class AdServiceImpl implements AdService {
      * Method for deleting an ad by ID
      */
     @Override
-    public boolean removeAdDto(Integer id) {
-        if (checkAccess(id)) {
-            adRepository.deleteById(id);
-            return true;
+    public void removeAdDto(Authentication authentication, Integer id) {
+        Ad ad = adRepository.findById(id).orElseThrow(AdNotFoundException::new);
+        if (checkAccess(authentication, ad.getAuthor().getEmail())) {
+            adRepository.delete(ad);
+        } else {
+            throw new ForbiddenException();
         }
-        throw new AdNotFoundException();
     }
 
     /**
      * Method for changing the ad by ID
      */
     @Override
-    public AdsDto updateAdDto(Integer id, CreateAdsDto createAdsDto) {
-        Ad ad = adRepository.findById(id).orElseThrow();
-        if (checkAccess(id)) {
+    public AdsDto updateAdDto(Authentication authentication, Integer id, CreateAdsDto createAdsDto) {
+        Ad ad = adRepository.findById(id).orElseThrow(AdNotFoundException::new);
+        if (checkAccess(authentication, ad.getAuthor().getEmail())) {
             ad.setTitle(createAdsDto.getTitle());
             ad.setPrice(createAdsDto.getPrice());
             ad.setDescription(createAdsDto.getDescription());
             adRepository.save(ad);
             return adMapper.mapAdToAdDto(ad);
+        } else {
+            throw new ForbiddenException();
         }
-        throw new AdNotFoundException();
     }
 
     /**
@@ -121,12 +126,8 @@ public class AdServiceImpl implements AdService {
      * Method for checking access by the administrator
      */
     @Override
-    public boolean checkAccess(Integer id) {
-        Role role = Role.ADMIN;
-        Ad ad = adRepository.findById(id).orElseThrow();
-        User user = userService.findAuthUser().orElseThrow();
-        String curName = user.getUsername();
-        return ad.getAuthor().getUsername().equals(curName)
-                || user.getAuthorities().contains(role);
+    public boolean checkAccess(Authentication authentication, String email) {
+        return authentication.getName().equals(email)
+                || authentication.getAuthorities().contains(Role.ADMIN);
     }
 }

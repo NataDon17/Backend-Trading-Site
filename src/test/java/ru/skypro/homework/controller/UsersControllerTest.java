@@ -1,7 +1,5 @@
 package ru.skypro.homework.controller;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,7 +11,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.DynamicPropertyRegistry;
 
@@ -34,8 +31,6 @@ import ru.skypro.homework.entity.Image;
 import ru.skypro.homework.entity.User;
 import ru.skypro.homework.repository.ImageRepository;
 import ru.skypro.homework.repository.UserRepository;
-import ru.skypro.homework.service.AuthService;
-import ru.skypro.homework.service.UserService;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,17 +47,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class UsersControllerTest {
     @Autowired
     MockMvc mockMvc;
-    //    @Autowired
-//    private UserService userService;
     @Autowired
     private UserRepository userRepository;
     @Autowired
     private ImageRepository imageRepository;
-//    @Autowired
-//    private AuthService authService;
-//    private PasswordEncoder passwordEncoder;
-//    @Autowired
-//    private ObjectMapper objectMapper;
 
     @Container
     private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
@@ -92,7 +80,7 @@ public class UsersControllerTest {
                 "user@mail.ru",
                 Role.USER));
         Image image = new Image();
-        image.setBytes(Files.readAllBytes(Paths.get("user-avatar.png")));
+        image.setBytes(Files.readAllBytes(Paths.get("src/main/resources/user-avatar.png")));
         image.setId(user.getEmail());
         imageRepository.save(image);
         user.setImage(image);
@@ -174,7 +162,7 @@ public class UsersControllerTest {
                 "image",
                 "image.png",
                 MediaType.IMAGE_PNG_VALUE,
-                Files.readAllBytes(Paths.get("test-image.png"))
+                Files.readAllBytes(Paths.get("src/main/resources/test-image.png"))
         );
         MockMultipartHttpServletRequestBuilder patchMultipart = (MockMultipartHttpServletRequestBuilder)
                 MockMvcRequestBuilders.multipart("/users/me/image")

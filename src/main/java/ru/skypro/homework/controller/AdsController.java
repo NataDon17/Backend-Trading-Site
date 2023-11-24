@@ -2,7 +2,7 @@ package ru.skypro.homework.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.homework.dto.ads.AdsDto;
@@ -41,19 +41,21 @@ public class AdsController {
     }
 
     @GetMapping("/{id}")
-    public FullAdsDto getAds(@PathVariable Integer id) {
-        return adService.getFullAdDto(id);
+    public FullAdsDto getAds(@PathVariable("id") Integer adId) {
+        return adService.getFullAdDto(adId);
     }
 
     @DeleteMapping("/{id}")
-    public boolean removeAd(@PathVariable Integer id) {
-        return adService.removeAdDto(id);
+    public void removeAd(Authentication authentication,
+                         @PathVariable("id") Integer adId) {
+        adService.removeAdDto(authentication, adId);
     }
 
     @PatchMapping("/{id}")
-    public AdsDto updateAds(@PathVariable Integer id,
+    public AdsDto updateAds(Authentication authentication,
+                            @PathVariable("id") Integer adId,
                             @RequestBody CreateAdsDto adsDto) {
-        return adService.updateAdDto(id, adsDto);
+        return adService.updateAdDto(authentication, adId, adsDto);
     }
 
     @GetMapping("/me")
@@ -62,9 +64,9 @@ public class AdsController {
     }
 
     @PatchMapping("/{id}/image")
-    public void updateImage(@PathVariable Integer id,
+    public void updateImage(@PathVariable("id") Integer adId,
                             @RequestPart MultipartFile image) {
-        adService.updateImageAdDto(id, image);
+        adService.updateImageAdDto(adId, image);
     }
 
     //COMMENTS
@@ -80,17 +82,18 @@ public class AdsController {
     }
 
     @DeleteMapping("/{adId}/comments/{commentId}")
-    public ResponseEntity<CommentDTO> deleteComment(@PathVariable int adId,
-                                                    @PathVariable int commentId) {
-        commentService.deleteComment(adId, commentId);
-        return ResponseEntity.ok().build();
+    public void deleteComment(Authentication authentication,
+                              @PathVariable int adId,
+                              @PathVariable int commentId) {
+        commentService.deleteComment(authentication, adId, commentId);
     }
 
     @PatchMapping("/{adId}/comments/{commentId}")
-    public CommentDTO updateComment(@PathVariable int adId,
+    public CommentDTO updateComment(Authentication authentication,
+                                    @PathVariable int adId,
                                     @PathVariable int commentId,
                                     @RequestBody CreateOrUpdateCommentDTO createOrUpdateCommentDTO) {
-        return commentService.updateComment(adId, commentId, createOrUpdateCommentDTO);
+        return commentService.updateComment(authentication, adId, commentId, createOrUpdateCommentDTO);
     }
 
     @GetMapping(value = "/{id}/image", produces = MediaType.IMAGE_PNG_VALUE)

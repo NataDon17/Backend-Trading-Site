@@ -1,6 +1,8 @@
 package ru.skypro.homework.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +27,7 @@ public class UsersController {
     private final AuthService authService;
 
     @PostMapping("/set_password")
-    public void updatePassword(
-            @RequestBody NewPassDto newPassDto) {
+    public void updatePassword(@RequestBody NewPassDto newPassDto) {
         authService.updatePassword(newPassDto);
     }
 
@@ -36,20 +37,23 @@ public class UsersController {
     }
 
     @PatchMapping("/me")
-    public UserInfoDto updateInfoAboutUser(
-            @RequestBody UserInfoDto userInfoDto) {
+    public UserInfoDto updateInfoAboutUser(@RequestBody UserInfoDto userInfoDto) {
         return userService.updateInfoAboutUser(userInfoDto);
     }
 
     @PatchMapping("/me/image")
-    public ResponseEntity<byte[]> updateUserImage(
-            @RequestPart MultipartFile image) {
+    public ResponseEntity<byte[]> updateUserImage(@RequestPart MultipartFile image) {
         userService.updateUserImage(image);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/{id}/image", produces = MediaType.IMAGE_PNG_VALUE)
-    public byte[] getImage(@PathVariable("id") String id) {
-        return imageService.getImage(id);
+    public ResponseEntity<Resource> getImage(@PathVariable("id") String id) {
+        byte[] imageData = imageService.getImage(id);
+        ByteArrayResource resource = new ByteArrayResource(imageData);
+        return ResponseEntity.ok()
+                .contentLength(imageData.length)
+                .contentType(MediaType.IMAGE_PNG)
+                .body(resource);
     }
 }

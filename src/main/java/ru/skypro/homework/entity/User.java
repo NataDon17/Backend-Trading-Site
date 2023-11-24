@@ -3,8 +3,6 @@ package ru.skypro.homework.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 import ru.skypro.homework.dto.authdto.Role;
 
 import javax.persistence.*;
@@ -18,10 +16,10 @@ import java.util.*;
 @NoArgsConstructor
 @Entity
 @Table(name = "user_auth")
-public class User implements UserDetails {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private int id;
 
     @Column(nullable = false, length = 32)
@@ -55,33 +53,6 @@ public class User implements UserDetails {
 
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL)
     private List<Comment> commentsList = new ArrayList<>();
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        Set<Role> roles = new HashSet<>();
-        roles.add(this.role);
-        return roles;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 
     public User(int id, String email, String firstName, String lastName, String phone, Image image, String password,
                 String username, Role role) {
